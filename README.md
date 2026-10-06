@@ -8,4 +8,3 @@ Aufgaben für Schülerinnen und Schüler, die nicht am Sportunterricht teilnehme
 - Lösungen und Entwürfe als PDF ohne personenbezogene Daten
 
 Die Seite ist eine einzelne HTML-Datei ohne Server und lädt keine Inhalte von fremden Anbietern.
-Hinweis: Das Passwort der Lehrkraft-Ansicht ist nur ein Sichtschutz; der Quelltext ist öffentlich.
