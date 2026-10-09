@@ -2035,18 +2035,22 @@ function drawField(ctx,kind){
   else if(kind==='ultimate'){ rect(x0,y0,w,h); const ez=w*0.17; line(x0+ez,y0,x0+ez,y0+h); line(x0+w-ez,y0,x0+w-ez,y0+h); txt('Endzone',x0+ez/2,cy); txt('Endzone',x0+w-ez/2,cy); }
   else if(kind==='stage'){ rect(x0,y0,w,h-50); ctx.setLineDash([8,8]); line(cx,y0,cx,y0+h-50); line(x0,y0+(h-50)/2,x0+w,y0+(h-50)/2); ctx.setLineDash([]); txt('Publikum',cx,y0+h-10); }
   else if(kind==='mat'){ rect(x0+150,y0,w-300,h); ctx.setLineDash([10,8]); rect(x0+230,y0+80,w-460,h-160); ctx.setLineDash([]); txt('Mattenfläche',cx,y0+h+30>CH?CH-10:y0+h-10); }
+  else if(kind==='blank'){ }
   else { ctx.lineWidth=1; ctx.strokeStyle='#E1E7EA'; for(let x=0;x<=CW;x+=50) line(x,0,x,CH); for(let y=0;y<=CH;y+=50) line(0,y,CW,y); }
 }
-function makeCanvas(wrap,kind){
-  let tool='blue'; const items=[]; let cur=null,nA=0,nB=0;
-  const tools=[['blue','Laufweg','var(--accent)'],['red','Ball-/Passweg','var(--court-red)'],['A','Spieler','var(--accent)'],['B','Gegner','var(--court-red)'],['ball','Ball/Gerät','var(--court-yellow)']];
-  wrap.innerHTML=`<div class="toolbar" role="group" aria-label="Zeichenwerkzeug">${tools.map(t=>`<button class="tool" data-tool="${t[0]}" aria-pressed="${t[0]===tool}"><span class="dot" style="background:${t[2]}"></span>${t[1]}</button>`).join('')}<button class="tool" data-act="undo">Rückgängig</button><button class="tool" data-act="clear">Alles löschen</button></div>
+const LEGEND='Legende: blaue gestrichelte Linie = Laufweg, rote durchgezogene Linie = Ball-/Passweg, schwarze Linie = Freihand, blauer Kreis = Spieler, rotes Kreuz = Gegner, gelber Punkt = Ball/Gerät';
+const sw=(c,dash)=>`<svg width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="${c}" stroke-width="3" stroke-linecap="round" ${dash?'stroke-dasharray="5 4"':''}/></svg>`;
+function makeCanvas(wrap,kind,blankFirst){
+  let tool='blue'; const items=[]; let cur=null,nA=0,nB=0; const tmpl=kind; if(blankFirst) kind='blank';
+  const tools=[['blue','Laufweg',sw('var(--accent)',1)],['red','Ball-/Passweg',sw('var(--court-red)',0)],['free','Freihand',sw('var(--ink)',0)],['A','Spieler','<span class="dot" style="background:var(--accent)"></span>'],['B','Gegner','<span class="dot" style="background:var(--court-red)"></span>'],['ball','Ball/Gerät','<span class="dot" style="background:var(--court-yellow)"></span>']];
+  wrap.innerHTML=`<div class="toolbar" role="group" aria-label="Zeichenwerkzeug">${tools.map(t=>`<button class="tool" data-tool="${t[0]}" aria-pressed="${t[0]===tool}">${t[2]}${t[1]}</button>`).join('')}<button class="tool" data-act="undo">Rückgängig</button><button class="tool" data-act="clear">Alles löschen</button><button class="tool" data-act="bg">${blankFirst?(tmpl==='grid'?'Kästchen':'Spielfeld-Vorlage'):'Leeres Blatt'}</button></div>
     <div class="canvas-wrap"><canvas width="${CW}" height="${CH}" aria-label="Zeichenfläche"></canvas></div>`;
   const cv=wrap.querySelector('canvas'), ctx=cv.getContext('2d'); const C={blue:'#1D5BB8',red:'#C2412D',ball:'#E3A912'};
   const arrow=p=>{ if(p.length<2) return; const [x1,y1]=p[p.length-1]; let k=p.length-2; while(k>0&&Math.hypot(p[k][0]-x1,p[k][1]-y1)<18) k--; const [x0,y0]=p[k]; const a=Math.atan2(y1-y0,x1-x0); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1-18*Math.cos(a-.45),y1-18*Math.sin(a-.45)); ctx.lineTo(x1-18*Math.cos(a+.45),y1-18*Math.sin(a+.45)); ctx.closePath(); ctx.fill(); };
   function redraw(){ drawField(ctx,kind);
     for(const it of items){
-      if(it.t==='line'){ ctx.strokeStyle=ctx.fillStyle=C[it.c]; ctx.lineWidth=4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.setLineDash(it.c==='red'?[14,10]:[]); ctx.beginPath(); it.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.stroke(); ctx.setLineDash([]); arrow(it.p); }
+      if(it.t==='line'){ ctx.strokeStyle=ctx.fillStyle=C[it.c]; ctx.lineWidth=4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.setLineDash(it.c==='blue'?[14,10]:[]); ctx.beginPath(); it.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.stroke(); ctx.setLineDash([]); arrow(it.p); }
+      else if(it.t==='free'){ ctx.strokeStyle='#15212A'; ctx.lineWidth=3.5; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.setLineDash([]); ctx.beginPath(); it.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); if(it.p.length===1) ctx.lineTo(it.p[0][0]+.1,it.p[0][1]); ctx.stroke(); }
       else if(it.t==='A'){ ctx.fillStyle=C.blue; ctx.beginPath(); ctx.arc(it.x,it.y,18,0,7); ctx.fill(); ctx.fillStyle='#FFF'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(it.n,it.x,it.y+1); ctx.textBaseline='alphabetic'; }
       else if(it.t==='B'){ ctx.strokeStyle=C.red; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(it.x-14,it.y-14); ctx.lineTo(it.x+14,it.y+14); ctx.moveTo(it.x+14,it.y-14); ctx.lineTo(it.x-14,it.y+14); ctx.stroke(); ctx.fillStyle=C.red; ctx.font='bold 15px sans-serif'; ctx.textAlign='left'; ctx.fillText(it.n,it.x+16,it.y-10); }
       else if(it.t==='ball'){ ctx.fillStyle=C.ball; ctx.strokeStyle='#5F4A00'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(it.x,it.y,10,0,7); ctx.fill(); ctx.stroke(); }
@@ -2054,26 +2058,29 @@ function makeCanvas(wrap,kind){
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*CW/r.width,(e.clientY-r.top)*CH/r.height]; };
   cv.addEventListener('pointerdown',e=>{ if(cv.dataset.lock) return; e.preventDefault(); const [x,y]=pos(e);
     if(tool==='blue'||tool==='red'){ cur={t:'line',c:tool,p:[[x,y]]}; items.push(cur); cv.setPointerCapture(e.pointerId); }
+    else if(tool==='free'){ cur={t:'free',p:[[x,y]]}; items.push(cur); cv.setPointerCapture(e.pointerId); }
     else if(tool==='A') items.push({t:'A',x,y,n:++nA}); else if(tool==='B') items.push({t:'B',x,y,n:++nB}); else items.push({t:'ball',x,y}); redraw(); });
-  cv.addEventListener('pointermove',e=>{ if(!cur) return; const [x,y]=pos(e); const l=cur.p[cur.p.length-1]; if(Math.hypot(x-l[0],y-l[1])>3){ cur.p.push([x,y]); redraw(); } });
+  cv.addEventListener('pointermove',e=>{ if(!cur) return; const [x,y]=pos(e); const l=cur.p[cur.p.length-1]; if(Math.hypot(x-l[0],y-l[1])>(cur.t==='free'?1.5:3)){ cur.p.push([x,y]); redraw(); } });
   const end=()=>{ cur=null; }; cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
   wrap.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{ tool=b.dataset.tool; wrap.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',x===b)); });
   wrap.querySelector('[data-act=undo]').onclick=()=>{ const it=items.pop(); if(it&&it.t==='A') nA--; if(it&&it.t==='B') nB--; redraw(); };
   wrap.querySelector('[data-act=clear]').onclick=()=>{ items.length=0; nA=nB=0; redraw(); };
+  const bgb=wrap.querySelector('[data-act=bg]'); if(bgb) bgb.onclick=()=>{ kind=kind==='blank'?tmpl:'blank'; bgb.textContent=kind==='blank'?(tmpl==='grid'?'Kästchen':'Spielfeld-Vorlage'):'Leeres Blatt'; redraw(); };
   redraw(); return cv;
 }
 function taskSketch(sp,lv,type,dur){
   const n={'45':2,'60':3,'90':3}[dur]; const P=sp.sk[lv].slice(0,n);
   $('#app').innerHTML=frame(sp,lv,type,dur,`${plan([`Bearbeite ${n===1?'die Skizze':'nacheinander '+n+' Skizzen'}.`,'Erkläre jede Skizze in eigenen Worten.','Speichere alles als PDF.'])}
-    <p class="note">Legende: blaue Linie = Laufweg, rote gestrichelte Linie = Ball- oder Passweg, blauer Kreis = Spieler, rotes Kreuz = Gegner, gelber Punkt = Ball oder Gerät.</p>
+    <p class="note">${LEGEND}. Mit „Leeres Blatt“ kannst du ohne Spielfeld zeichnen, z. B. Strichfiguren oder Diagramme.</p>
     ${P.map((t,i)=>`<div class="part"><h2>Skizze ${i+1}</h2><div class="card"><p><b>Aufgabe:</b> ${esc(t)}</p></div><div id="cw${i}" class="stack" style="gap:8px"></div>${ta('ex'+i,'Erkläre deine Skizze')}</div>`).join('')}
     <button class="btn primary big" id="check">Fertig</button>${doneBlock('Deine Lehrkraft bespricht die Skizzen mit dir.')}`);
-  const cvs=P.map((_,i)=>makeCanvas($('#cw'+i),sp.field));
+  const BLANK=/Strich|Schaubild|Diagramm|Kurve|Verlauf|in (drei|vier) Bildern|Bewertungsbogen|Beobachtungsbogen|Trainingsplan|Zeitstrahl|Herz-Kreislauf|Querschnitt|Mindmap|Arm und markiere/i;
+  const cvs=P.map((t,i)=>makeCanvas($('#cw'+i),sp.field,BLANK.test(t)));
   $('#check').onclick=()=>{
     cvs.forEach(c=>c.dataset.lock='1'); $$('textarea').forEach(t=>t.readOnly=true);
     $('#check').hidden=true; $('#done').hidden=false; $('#res').textContent=n===1?'Skizze fertig':'Skizzen fertig';
     $('#pdf').onclick=()=>{
-      const pdf=makePdf(sp.name,'Skizzen: '+sp.L[lv].t).head().p('Legende: blaue Linie = Laufweg, rote gestrichelte Linie = Ball-/Passweg, blauer Kreis = Spieler, rotes Kreuz = Gegner, gelber Punkt = Ball/Gerät',{size:9,color:[90,90,90]});
+      const pdf=makePdf(sp.name,'Skizzen: '+sp.L[lv].t).head().p(LEGEND,{size:9,color:[90,90,90]});
       P.forEach((t,i)=>{ if(i) pdf.page(); pdf.h(`Skizze ${i+1}`).p(t).img(cvs[i].toDataURL('image/png'),CH/CW).h('Meine Erklärung').p(val('ex'+i)||'(keine Erklärung)'); });
       pdf.save(fileName(sp,'Skizzen'));
     };
