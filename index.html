@@ -2600,7 +2600,7 @@ const ROLE_DEF=[
  {id:'tp',name:'Turnierplaner',d:'Spielplan erstellen, Ergebnisse eintragen, Tabelle führen',hint:'Für Spiele und Zweikämpfe. Teams heißen z. B. Rot, Blau, Gelb – keine Namen von Mitschülern.'}];
 const TP_SPORTS=['fb','bb','hb','vb','bm','uf','rk'];
 const roleSports=r=>SPORTS.map(s=>s.id).filter(id=>r==='tp'?TP_SPORTS.includes(id):!!ROLES[r==='st'?'stat':'ref'][id]);
-const PW_HASH='a18188a8c386e0d61d9bb3956e7e1194fc2bd11629fd7aacbb66e047d8c5dea7'; // vorläufiges Passwort
+const PW_HASH='1475d1d4140517407653a38cf78daa9f704bb6a6725fb65b099213d7ac4d5cfe'; // Passwort Lehrkraft-Ansicht
 
 /* ---------- SHA-256 (für den Passwortschutz) ---------- */
 function sha256(str){
